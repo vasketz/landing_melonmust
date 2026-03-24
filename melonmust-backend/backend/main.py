@@ -1,27 +1,62 @@
-import aiosmtplib
+import os
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-import json
-import os
+from fastapi.responses import Response
 from email.message import EmailMessage
+import aiosmtplib
 from dotenv import load_dotenv
 
+# =========================
+# ENV
+# =========================
 load_dotenv()
 
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
-origins = [
-	"*"
-]
+# =========================
+# APP
+# =========================
+app = FastAPI()
 
+# =========================
+# CORS (DEBUG ABIERTO)
+# =========================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # luego restringes a tu dominio
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-async def send_email(lead):
+# =========================
+# ROOT
+# =========================
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
+# =========================
+# MODELO
+# =========================
+class Lead(BaseModel):
+    firstName: str
+    lastName: str
+    email: str
+    phone: str
+    amount: str
+    business: str | None = None
+
+# =========================
+# EMAIL
+# =========================
+async def send_email(lead: Lead):
     message = EmailMessage()
     message["From"] = EMAIL_USER
     message["To"] = EMAIL_USER
-    message["Subject"] = "🚀 Nuevo Lead - MelonMust from react landing"
+    message["Subject"] = "🚀 Nuevo Lead - MelonMust"
 
     message.set_content(f"""
 Nuevo lead recibido:
@@ -39,35 +74,19 @@ Negocio: {lead.business}
         port=587,
         start_tls=True,
         username=EMAIL_USER,
-        password=EMAIL_PASSWORD,  # ⚠️ no tu password normal
+        password=EMAIL_PASSWORD,
     )
 
-# ✅ PRIMERO creas la app
-app = FastAPI()
-@app.get("/")
-def root():
-    return {"status": "ok"}
+# =========================
+# FIX PREFLIGHT (CLAVE)
+# =========================
+@app.options("/lead")
+async def options_lead():
+    return Response(status_code=200)
 
-# CORS (para React)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# modelo
-class Lead(BaseModel):
-    firstName: str
-    lastName: str
-    email: str
-    phone: str
-    amount: str
-    business: str | None = None
-
-
-# endpoint
+# =========================
+# ENDPOINT
+# =========================
 @app.post("/lead")
 async def create_lead(lead: Lead):
     print("NEW LEAD:", lead)
@@ -79,4 +98,3 @@ async def create_lead(lead: Lead):
         print("EMAIL ERROR ❌:", e)
 
     return {"message": "Lead saved"}
-
