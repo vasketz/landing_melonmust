@@ -15,7 +15,7 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 origins = [
 	"https://melonmust.com"
 	"https://www.melonmust.com"
-	"https://melonmust.vercel.app"
+	"https://landing-melonmust.vercel.app"
 ]
 
 
