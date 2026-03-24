@@ -41,7 +41,7 @@ Negocio: {lead.business}
         port=587,
         start_tls=True,
         username=EMAIL_USER,
-        password="dmwx akij mzwi lrfn",  # ⚠️ no tu password normal
+        password=EMAIL_PASSWORD,  # ⚠️ no tu password normal
     )
 
 # ✅ PRIMERO creas la app
