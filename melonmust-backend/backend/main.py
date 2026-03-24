@@ -3,17 +3,18 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from email.message import EmailMessage
-import aiosmtplib
 from dotenv import load_dotenv
+import resend
 
 # =========================
 # ENV
 # =========================
 load_dotenv()
 
-EMAIL_USER = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+ADMIN_EMAIL = os.getenv("EMAIL_USER")  # donde recibes los leads
+
+resend.api_key = RESEND_API_KEY
 
 # =========================
 # APP
@@ -21,7 +22,7 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 app = FastAPI()
 
 # =========================
-# CORS (DEBUG ABIERTO)
+# CORS (DEBUG)
 # =========================
 app.add_middleware(
     CORSMiddleware,
@@ -50,35 +51,25 @@ class Lead(BaseModel):
     business: str | None = None
 
 # =========================
-# EMAIL
+# EMAIL CON RESEND
 # =========================
 async def send_email(lead: Lead):
-    message = EmailMessage()
-    message["From"] = EMAIL_USER
-    message["To"] = EMAIL_USER
-    message["Subject"] = "🚀 Nuevo Lead - MelonMust"
-
-    message.set_content(f"""
-Nuevo lead recibido:
-
-Nombre: {lead.firstName} {lead.lastName}
-Email: {lead.email}
-Teléfono: {lead.phone}
-Monto: {lead.amount}
-Negocio: {lead.business}
-""")
-
-    await aiosmtplib.send(
-        message,
-        hostname="smtp.gmail.com",
-        port=587,
-        start_tls=True,
-        username=EMAIL_USER,
-        password=EMAIL_PASSWORD,
-    )
+    resend.Emails.send({
+        "from": "onboarding@resend.dev",  # luego cambias a tu dominio
+        "to": ADMIN_EMAIL,
+        "subject": "🚀 Nuevo Lead - MelonMust",
+        "html": f"""
+        <h2>Nuevo Lead Recibido</h2>
+        <p><b>Nombre:</b> {lead.firstName} {lead.lastName}</p>
+        <p><b>Email:</b> {lead.email}</p>
+        <p><b>Teléfono:</b> {lead.phone}</p>
+        <p><b>Monto:</b> {lead.amount}</p>
+        <p><b>Negocio:</b> {lead.business}</p>
+        """
+    })
 
 # =========================
-# FIX PREFLIGHT (CLAVE)
+# FIX PREFLIGHT
 # =========================
 @app.options("/lead")
 async def options_lead():
@@ -94,7 +85,7 @@ async def create_lead(lead: Lead):
     try:
         await send_email(lead)
         print("EMAIL SENT ✅")
+        return {"status": "success"}
     except Exception as e:
         print("EMAIL ERROR ❌:", e)
-
-    return {"message": "Lead saved"}
+        return {"status": "error", "detail": str(e)}
