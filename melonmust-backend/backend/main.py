@@ -46,6 +46,9 @@ Negocio: {lead.business}
 
 # ✅ PRIMERO creas la app
 app = FastAPI()
+@app.get("/")
+def root():
+    return {"status": "ok"}
 
 # CORS (para React)
 app.add_middleware(
