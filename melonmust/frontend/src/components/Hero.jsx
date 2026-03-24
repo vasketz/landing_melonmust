@@ -19,29 +19,31 @@ export default function Hero() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    console.log("FORM DATA:", form);
+  console.log("FORM DATA:", form);
 
-    try {
-      const res = await fetch("http://127.0.0.1:8000/lead", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
+  const API = import.meta.env.VITE_API_URL;
 
-      const data = await res.json();
-      console.log("DATA:", data);
+  try {
+    const res = await fetch(`${API}/lead`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(form),
+    });
 
-      alert("Application submitted successfully");
+    const data = await res.json();
+    console.log("DATA:", data);
 
-    } catch (error) {
-      console.error("ERROR:", error);
-      alert("Error sending data");
-    }
-  };
+    alert("Application submitted successfully");
+
+  } catch (error) {
+    console.error("ERROR:", error);
+    alert("Error sending data");
+  }
+};
 
   return (
     <section className="relative w-full min-h-screen text-white overflow-hidden pt-32">
