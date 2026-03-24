@@ -21,6 +21,7 @@ export default function Hero() {
   const handleSubmit = async (e) => {
   e.preventDefault();
 
+  console.log("API URL:", import.meta.env.VITE_API_URL);
   console.log("FORM DATA:", form);
 
   const API = import.meta.env.VITE_API_URL;
