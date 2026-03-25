@@ -57,7 +57,7 @@ async def send_email(lead: Lead):
     resend.Emails.send({
         "from": "onboarding@resend.dev",  # luego cambias a tu dominio
         "to": ADMIN_EMAIL,
-        "subject": "🚀 Nuevo Lead - MelonMust",
+        "subject": "🚀 Nuevo Lead - MelonMust from resend",
         "html": f"""
         <h2>Nuevo Lead Recibido</h2>
         <p><b>Nombre:</b> {lead.firstName} {lead.lastName}</p>
