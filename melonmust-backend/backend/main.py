@@ -1,8 +1,9 @@
 import os
-from fastapi import FastAPI, UploadFile, File, Form, Request
+from fastapi import FastAPI, UploadFile, File, Request
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import resend
 
@@ -22,11 +23,17 @@ resend.api_key = RESEND_API_KEY
 app = FastAPI()
 
 # =========================
+# STATIC FILES (CLAVE)
+# =========================
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# =========================
 # CORS
 # =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # luego restringes a tu dominio
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,7 +47,7 @@ def root():
     return {"status": "ok"}
 
 # =========================
-# MODELO (para JSON)
+# MODELO (JSON)
 # =========================
 class Lead(BaseModel):
     firstName: str
@@ -65,21 +72,24 @@ async def send_email(data: dict):
         <p><b>Teléfono:</b> {data.get('phone')}</p>
         <p><b>Monto:</b> {data.get('amount')}</p>
         <p><b>Negocio:</b> {data.get('business')}</p>
-        <p><b>Statement:</b><a href="{data.get('file_url', '#')}">View File</a></p>
+        {
+            f"<p><b>Statement:</b> <a href='{data.get('file_url')}'>View File</a></p>"
+            if data.get("file_url") else ""
+        }
         """
     })
 
     print("RESEND RESPONSE:", response)
 
 # =========================
-# FIX PREFLIGHT
+# PREFLIGHT
 # =========================
 @app.options("/lead")
 async def options_lead():
     return Response(status_code=200)
 
 # =========================
-# ENDPOINT (JSON + FILE)
+# ENDPOINT
 # =========================
 @app.post("/lead")
 async def create_lead(request: Request):
@@ -88,7 +98,7 @@ async def create_lead(request: Request):
 
     try:
         # =========================
-        # CASO 1: JSON (lo que ya tienes funcionando)
+        # JSON (lo actual)
         # =========================
         if "application/json" in content_type:
             data = await request.json()
@@ -99,7 +109,7 @@ async def create_lead(request: Request):
             return {"status": "success"}
 
         # =========================
-        # CASO 2: FORMDATA (con archivo)
+        # FORMDATA (con archivo)
         # =========================
         elif "multipart/form-data" in content_type:
             form = await request.form()
@@ -109,19 +119,23 @@ async def create_lead(request: Request):
 
             print("NEW LEAD (FORM):", data)
 
-            # guardar archivo si existe
             if file and isinstance(file, UploadFile):
                 contents = await file.read()
 
-                os.makedirs("uploads", exist_ok=True)
-
-                file_path = f"uploads/{file.filename}"
-                file_url = f"https://landing-melonmust.onrender.com/{file_path}"
+                filename = file.filename.replace(" ", "_")
+                file_path = f"uploads/{filename}"
 
                 with open(file_path, "wb") as f:
                     f.write(contents)
 
+                # 🔥 CLAVE: generar URL pública
+                file_url = f"https://landing-melonmust.onrender.com/uploads/{filename}"
+
+                # 🔥 CLAVE: agregar al data
+                data["file_url"] = file_url
+
                 print(f"FILE SAVED: {file_path}")
+                print(f"FILE URL: {file_url}")
 
             await send_email(data)
 
