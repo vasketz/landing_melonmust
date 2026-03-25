@@ -65,6 +65,7 @@ async def send_email(data: dict):
         <p><b>Teléfono:</b> {data.get('phone')}</p>
         <p><b>Monto:</b> {data.get('amount')}</p>
         <p><b>Negocio:</b> {data.get('business')}</p>
+        <p><b>Statement:</b><a href="{data.get('file_url', '#')}">View File</a></p>
         """
     })
 
@@ -115,6 +116,7 @@ async def create_lead(request: Request):
                 os.makedirs("uploads", exist_ok=True)
 
                 file_path = f"uploads/{file.filename}"
+                file_url = f"https://landing-melonmust.onrender.com/{file_path}"
 
                 with open(file_path, "wb") as f:
                     f.write(contents)
