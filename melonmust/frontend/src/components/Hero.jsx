@@ -163,19 +163,32 @@ Object.keys(form).forEach(key => {
               required
             />
             <div className="text-left">
-              <label className="text-sm text-gray-300">
+              <label className="text-sm text-gray-300 block mb-2">
                 Upload Bank Statements (Optional)
               </label>
 
-              <input
-                type="file"
-                accept=".pdf,.jpg,.png"
-                onChange={(e) => setForm({
-                  ...form,
-                  file: e.target.files[0]
-                })}
-                className="w-full mt-2 p-2 rounded bg-white text-black"
-              />
+              <label className="flex items-center justify-between w-full cursor-pointer bg-white text-black rounded-lg px-4 py-3 hover:bg-gray-100 transition">
+
+                <span className="text-sm">
+                  {form.file ? form.file.name : "Upload file"}
+                </span>
+
+                <span className="flex items-center gap-2 bg-yellow-500 px-4 py-1 rounded font-semibold text-sm">
+                  ⬆ Upload
+                </span>
+
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.png"
+                  className="hidden"
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      file: e.target.files[0],
+                    })
+                  }
+                />
+              </label>
 
               <p className="text-xs text-gray-400 mt-1">
                 Speeds up approval process
