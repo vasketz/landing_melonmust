@@ -8,7 +8,8 @@ export default function Hero() {
     email: "",
     phone: "",
     amount: "",
-    business: ""
+    business: "",
+    file: null
   });
 
   const handleChange = (e) => {
@@ -19,38 +20,43 @@ export default function Hero() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  console.log("API URL:", import.meta.env.VITE_API_URL);
-  console.log("FORM DATA:", form);
+    console.log("API URL:", import.meta.env.VITE_API_URL);
+    console.log("FORM DATA:", form);
 
-  const API = import.meta.env.VITE_API_URL;
+    const API = import.meta.env.VITE_API_URL;
 
-  try {
-    const res = await fetch(`${API}/lead`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+    try {
+      // 🔥 FORM DATA (CLAVE PARA FILE)
+      const formData = new FormData();
 
-    const data = await res.json();
-    console.log("DATA:", data);
+      formData.append("firstName", form.firstName);
+      formData.append("lastName", form.lastName);
+      formData.append("email", form.email);
+      formData.append("phone", form.phone);
+      formData.append("amount", form.amount);
+      formData.append("business", form.business);
 
-    alert("Application submitted successfully");
+      if (form.file) {
+        formData.append("file", form.file);
+      }
 
-  } catch (error) {
-    console.error("ERROR:", error);
-    alert("Error sending data");
-  }
-};
+      const res = await fetch(`${API}/lead`, {
+        method: "POST",
+        body: formData, // ❗ SIN headers
+      });
 
-const formData = new FormData();
+      const data = await res.json();
+      console.log("DATA:", data);
 
-Object.keys(form).forEach(key => {
-  formData.append(key, form[key]);
-});
+      alert("Application submitted successfully");
+
+    } catch (error) {
+      console.error("ERROR:", error);
+      alert("Error sending data");
+    }
+  };
 
   return (
     <section className="relative w-full min-h-screen text-white overflow-hidden pt-32">
@@ -79,8 +85,8 @@ Object.keys(form).forEach(key => {
           </p>
 
           <ul className="space-y-3 text-gray-300 mb-10">
-            <li>✔ No impact on credit score </li>
-            <li>✔ Approval in hours, not days  </li>
+            <li>✔ No impact on credit score</li>
+            <li>✔ Approval in hours, not days</li>
             <li>✔ 100% secure & confidential</li>
           </ul>
 
@@ -114,66 +120,33 @@ Object.keys(form).forEach(key => {
           <form className="space-y-4" onSubmit={handleSubmit}>
 
             <div className="grid grid-cols-2 gap-3">
-              <input
-                name="firstName"
-                placeholder="First Name"
-                onChange={handleChange}
-                className="p-3 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                required
-              />
-              <input
-                name="lastName"
-                placeholder="Last Name"
-                onChange={handleChange}
-                className="p-3 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                required
-              />
+              <input name="firstName" placeholder="First Name" onChange={handleChange} className="p-3 rounded-lg text-black" required />
+              <input name="lastName" placeholder="Last Name" onChange={handleChange} className="p-3 rounded-lg text-black" required />
             </div>
 
-            <input
-              name="business"
-              placeholder="Business Name"
-              onChange={handleChange}
-              className="w-full p-3 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            />
+            <input name="business" placeholder="Business Name" onChange={handleChange} className="w-full p-3 rounded-lg text-black" />
 
-            <input
-              name="email"
-              type="email"
-              placeholder="Email"
-              onChange={handleChange}
-              className="w-full p-3 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              required
-            />
+            <input name="email" type="email" placeholder="Email" onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
 
-            <input
-              name="phone"
-              placeholder="Phone Number"
-              onChange={handleChange}
-              className="w-full p-3 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              required
-            />
+            <input name="phone" placeholder="Phone Number" onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
 
-            <input
-              name="amount"
-              placeholder="Funding Amount"
-              value={form.amount}
-              onChange={handleChange}
-              className="w-full p-3 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              required
-            />
+            <input name="amount" placeholder="Funding Amount" value={form.amount} onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
+
+            {/* FILE INPUT PRO */}
             <div className="text-left">
               <label className="text-sm text-gray-300 block mb-2">
                 Upload Bank Statements (Optional)
               </label>
 
-              <label className="flex items-center justify-between w-full cursor-pointer bg-white text-black rounded-lg px-4 py-3 hover:bg-gray-100 transition">
+              <label className={`flex items-center justify-between w-full cursor-pointer rounded-lg px-4 py-3 transition ${
+                form.file ? "bg-green-100 text-black" : "bg-white text-black"
+              }`}>
 
                 <span className="text-sm">
                   {form.file ? form.file.name : "Upload file"}
                 </span>
 
-                <span className="flex items-center gap-2 bg-yellow-500 px-4 py-1 rounded font-semibold text-sm">
+                <span className="bg-yellow-500 px-4 py-1 rounded font-semibold text-sm hover:bg-yellow-400 transition">
                   ⬆ Upload
                 </span>
 
@@ -201,9 +174,11 @@ Object.keys(form).forEach(key => {
             >
               Check My Approval →
             </button>
-            <h3 className="text-xl font-semibold mb-4 text-center">
+
+            <p className="text-center text-sm text-gray-300">
               Takes less than 60 seconds • No credit impact
-            </h3>
+            </p>
+
           </form>
 
         </div>
