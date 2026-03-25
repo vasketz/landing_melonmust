@@ -12,51 +12,40 @@ export default function Hero() {
     file: null
   });
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
-  };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const API = import.meta.env.VITE_API_URL;
 
-    console.log("API URL:", import.meta.env.VITE_API_URL);
-    console.log("FORM DATA:", form);
+  try {
+    const formData = new FormData();
 
-    const API = import.meta.env.VITE_API_URL;
+    formData.append("firstName", form.firstName);
+    formData.append("lastName", form.lastName);
+    formData.append("email", form.email);
+    formData.append("phone", form.phone);
+    formData.append("amount", form.amount);
+    formData.append("business", form.business);
 
-    try {
-      // 🔥 FORM DATA (CLAVE PARA FILE)
-      const formData = new FormData();
-
-      formData.append("firstName", form.firstName);
-      formData.append("lastName", form.lastName);
-      formData.append("email", form.email);
-      formData.append("phone", form.phone);
-      formData.append("amount", form.amount);
-      formData.append("business", form.business);
-
-      if (form.file) {
-        formData.append("file", form.file);
-      }
-
-      const res = await fetch(`${API}/lead`, {
-        method: "POST",
-        body: formData, // ❗ SIN headers
-      });
-
-      const data = await res.json();
-      console.log("DATA:", data);
-
-      alert("Application submitted successfully");
-
-    } catch (error) {
-      console.error("ERROR:", error);
-      alert("Error sending data");
+    if (form.file) {
+      formData.append("file", form.file);
     }
-  };
+
+    const res = await fetch(`${API}/lead`, {
+      method: "POST",
+      body: formData, // ❗ SIN headers
+    });
+
+    const data = await res.json();
+    console.log("DATA:", data);
+
+    alert("Application submitted successfully");
+
+  } catch (error) {
+    console.error("ERROR:", error);
+    alert("Error sending data");
+  }
+};
 
   return (
     <section className="relative w-full min-h-screen text-white overflow-hidden pt-32">

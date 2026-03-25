@@ -124,8 +124,15 @@ async def create_lead(request: Request):
         elif "multipart/form-data" in content_type:
             form = await request.form()
 
-            data = dict(form)
-            file = form.get("file")
+            # separar campos y archivo correctamente
+            data = {}
+            file = None
+            
+            for key, value in form.items():
+                if isinstance(value, UploadFile):
+                    file = value
+                else:
+                    data[key] = value
 
             print("NEW LEAD (FORM):", data)
 
