@@ -31,7 +31,7 @@ export default function Steps() {
             </div>
             <h3 className="font-semibold mb-2">Apply Online</h3>
             <p className="text-gray-300 text-sm">
-              Funding decisions within hours, not days.
+              Submit Application (30 seconds)
             </p>
           </div>
 
@@ -42,7 +42,7 @@ export default function Steps() {
             </div>
             <h3 className="font-semibold mb-2">Get Approved</h3>
             <p className="text-gray-300 text-sm">
-              Our team reviews your business profile quickly.
+              Get Matched with Lenders
             </p>
           </div>
 
@@ -53,7 +53,7 @@ export default function Steps() {
             </div>
             <h3 className="font-semibold mb-2">Receive Funding</h3>
             <p className="text-gray-300 text-sm">
-              Funds deposited in as little as 24 hours.
+              Receive Funds in 24–48 Hours
             </p>
           </div>
 

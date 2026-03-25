@@ -46,6 +46,12 @@ export default function Hero() {
   }
 };
 
+const formData = new FormData();
+
+Object.keys(form).forEach(key => {
+  formData.append(key, form[key]);
+});
+
   return (
     <section className="relative w-full min-h-screen text-white overflow-hidden pt-32">
 
@@ -65,17 +71,17 @@ export default function Hero() {
         {/* LEFT */}
         <div>
           <h1 className="text-4xl md:text-5xl font-bold text-yellow-400 mb-6 leading-tight">
-            Fast Business Funding in 24 Hours
+            Fast Business Funding in 24–48 Hours
           </h1>
 
           <p className="text-xl md:text-2xl font-semibold mb-6">
-            Funding ranges from $10,000 to $5 Million depending on your business profile
+            Get approved for up to $500,000 without impacting your credit score.
           </p>
 
           <ul className="space-y-3 text-gray-300 mb-10">
-            <li>✔ Quick approvals</li>
-            <li>✔ Flexible repayment options</li>
-            <li>✔ No collateral required</li>
+            <li>✔ No impact on credit score </li>
+            <li>✔ Approval in hours, not days  </li>
+            <li>✔ 100% secure & confidential</li>
           </ul>
 
           <div>
@@ -156,14 +162,35 @@ export default function Hero() {
               className="w-full p-3 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-yellow-500"
               required
             />
+            <div className="text-left">
+              <label className="text-sm text-gray-300">
+                Upload Bank Statements (Optional)
+              </label>
+
+              <input
+                type="file"
+                accept=".pdf,.jpg,.png"
+                onChange={(e) => setForm({
+                  ...form,
+                  file: e.target.files[0]
+                })}
+                className="w-full mt-2 p-2 rounded bg-white text-black"
+              />
+
+              <p className="text-xs text-gray-400 mt-1">
+                Speeds up approval process
+              </p>
+            </div>
 
             <button
               type="submit"
               className="w-full bg-yellow-500 text-black p-4 rounded-lg font-bold text-lg hover:bg-yellow-400 transition shadow-lg"
             >
-              Get My Funding Options
+              Check My Approval →
             </button>
-
+            <h3 className="text-xl font-semibold mb-4 text-center">
+              Takes less than 60 seconds • No credit impact
+            </h3>
           </form>
 
         </div>
