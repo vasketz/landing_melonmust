@@ -39,7 +39,13 @@ export default function Hero() {
       formData.append("business", form.business);
 
       if (form.file) {
-        formData.append("file", form.file);
+        const cleanFile = new File(
+          [form.file],
+          form.file.name.replace(/[^a-zA-Z0-9.]/g, "_"), // 🔥 limpia nombre
+          { type: form.file.type }
+        );
+      
+        formData.append("file", cleanFile);
       }
 
       const res = await fetch(`${API}/lead`, {
