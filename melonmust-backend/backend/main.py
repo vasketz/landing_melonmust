@@ -1,5 +1,6 @@
 import os
-from fastapi import FastAPI, UploadFile, File, Request
+import uuid
+from fastapi import FastAPI, UploadFile, Request
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -23,7 +24,7 @@ resend.api_key = RESEND_API_KEY
 app = FastAPI()
 
 # =========================
-# STATIC FILES (CLAVE)
+# STATIC FILES
 # =========================
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -61,6 +62,18 @@ class Lead(BaseModel):
 # EMAIL
 # =========================
 async def send_email(data: dict):
+
+    file_section = ""
+    if data.get("file_url"):
+        file_section = f"""
+        <p>
+          <b>Statement:</b><br/>
+          <a href="{data.get('file_url')}" target="_blank">
+            View File
+          </a>
+        </p>
+        """
+
     response = resend.Emails.send({
         "from": "MelonMust <onboarding@resend.dev>",
         "to": ADMIN_EMAIL,
@@ -72,10 +85,7 @@ async def send_email(data: dict):
         <p><b>Teléfono:</b> {data.get('phone')}</p>
         <p><b>Monto:</b> {data.get('amount')}</p>
         <p><b>Negocio:</b> {data.get('business')}</p>
-        {
-            f"<p><b>Statement:</b> <a href='{data.get('file_url')}'>View File</a></p>"
-            if data.get("file_url") else ""
-        }
+        {file_section}
         """
     })
 
@@ -98,7 +108,7 @@ async def create_lead(request: Request):
 
     try:
         # =========================
-        # JSON (lo actual)
+        # JSON (NO TOCAR)
         # =========================
         if "application/json" in content_type:
             data = await request.json()
@@ -109,7 +119,7 @@ async def create_lead(request: Request):
             return {"status": "success"}
 
         # =========================
-        # FORMDATA (con archivo)
+        # FORMDATA (FILE)
         # =========================
         elif "multipart/form-data" in content_type:
             form = await request.form()
@@ -120,22 +130,25 @@ async def create_lead(request: Request):
             print("NEW LEAD (FORM):", data)
 
             if file and isinstance(file, UploadFile):
+
                 contents = await file.read()
 
-                filename = file.filename.replace(" ", "_")
+                # 🔥 nombre único (CRÍTICO)
+                filename = f"{uuid.uuid4()}_{file.filename.replace(' ', '_')}"
                 file_path = f"uploads/{filename}"
 
                 with open(file_path, "wb") as f:
                     f.write(contents)
 
-                # 🔥 CLAVE: generar URL pública
-                file_url = f"https://landing-melonmust.onrender.com/uploads/{filename}"
+                # 🔥 URL dinámica (CRÍTICO)
+                base_url = str(request.base_url).rstrip("/")
+                file_url = f"{base_url}/uploads/{filename}"
 
-                # 🔥 CLAVE: agregar al data
+                # 🔥 guardar en data
                 data["file_url"] = file_url
 
-                print(f"FILE SAVED: {file_path}")
-                print(f"FILE URL: {file_url}")
+                print("FILE SAVED:", file_path)
+                print("FILE URL:", file_url)
 
             await send_email(data)
 
