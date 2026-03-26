@@ -4,6 +4,7 @@ from time import time
 from fastapi import FastAPI, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from fastapi import Form, File
 from dotenv import load_dotenv
 from fastapi.staticfiles import StaticFiles
 import resend
@@ -190,7 +191,7 @@ async def create_lead(request: Request):
 
             file_path = None
 
-            if file and isinstance(file, UploadFile):
+            if file:
 
                 # VALIDAR TIPO
                 if file.content_type not in ALLOWED_TYPES:
