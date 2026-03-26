@@ -95,15 +95,23 @@ export default function Hero() {
       formData.append("amount", form.amount);
       formData.append("business", sanitize(form.business));
 
-      // archivo seguro
-      if (form.file) {
-        const cleanFile = new File(
-          [form.file],
-          form.file.name.replace(/[^a-zA-Z0-9.]/g, "_"),
-          { type: form.file.type }
-        );
+      // 🔥 tomar archivo directo del input (más confiable)
+      const fileInput = document.querySelector('input[type="file"]');
 
+      if (fileInput && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+      
+        const cleanFile = new File(
+          [file],
+          file.name.replace(/[^a-zA-Z0-9.]/g, "_"),
+          { type: file.type }
+        );
+      
         formData.append("file", cleanFile);
+      }
+
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
       }
 
       const res = await fetch(`${API}/lead`, {
