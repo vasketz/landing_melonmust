@@ -1,12 +1,11 @@
 import os
 import uuid
+import base64
 from time import time
 from fastapi import FastAPI, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from fastapi import Form, File
 from dotenv import load_dotenv
-from fastapi.staticfiles import StaticFiles
 import resend
 
 # =========================
@@ -23,7 +22,7 @@ resend.api_key = RESEND_API_KEY
 # CONFIG
 # =========================
 UPLOAD_DIR = "uploads"
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_FILE_SIZE = 5 * 1024 * 1024
 ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg"]
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -33,11 +32,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # =========================
 app = FastAPI()
 
-# 🔥 STATIC FILES (AQUÍ)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
 # =========================
-# CORS (RESTRINGIDO)
+# CORS
 # =========================
 app.add_middleware(
     CORSMiddleware,
@@ -46,8 +42,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
 
 # =========================
 # RATE LIMIT
@@ -59,7 +53,6 @@ def rate_limit(ip):
     if ip not in requests_log:
         requests_log[ip] = []
 
-    # limpiar requests antiguos
     requests_log[ip] = [t for t in requests_log[ip] if now - t < 60]
 
     if len(requests_log[ip]) > 10:
@@ -76,26 +69,17 @@ def root():
     return {"status": "ok"}
 
 # =========================
-# EMAIL
+# EMAIL (CON ATTACHMENT)
 # =========================
-async def send_email(data: dict):
+async def send_email(data: dict, file_bytes=None, filename=None):
 
-    file_section = ""
+    attachments = []
 
-    # 🔥 si hay URL (prioridad)
-    if data.get("file_url"):
-        file_section = f"""
-        <p>
-          <b>Statement:</b><br/>
-          <a href="{data.get('file_url')}" target="_blank">
-            View File
-          </a>
-        </p>
-        """
-
-    # fallback (solo por debug)
-    elif data.get("file_path"):
-        file_section = f"<p><b>File saved:</b> {data.get('file_path')}</p>"
+    if file_bytes and filename:
+        attachments.append({
+            "filename": filename,
+            "content": base64.b64encode(file_bytes).decode()
+        })
 
     response = resend.Emails.send({
         "from": "MelonMust <onboarding@resend.dev>",
@@ -108,8 +92,8 @@ async def send_email(data: dict):
         <p><b>Teléfono:</b> {data.get('phone')}</p>
         <p><b>Monto:</b> {data.get('amount')}</p>
         <p><b>Negocio:</b> {data.get('business')}</p>
-        {file_section}
-        """
+        """,
+        "attachments": attachments if attachments else None
     })
 
     print("RESEND RESPONSE:", response)
@@ -169,7 +153,7 @@ async def create_lead(request: Request):
             return {"status": "success"}
 
         # =========================
-        # FORMDATA (FILE)
+        # FORMDATA
         # =========================
         elif "multipart/form-data" in content_type:
             form = await request.form()
@@ -189,22 +173,21 @@ async def create_lead(request: Request):
 
             print("NEW LEAD (FORM):", data)
 
-            file_path = None
+            file_bytes = None
+            file_name = None
 
             if file:
 
-                # VALIDAR TIPO
                 if file.content_type not in ALLOWED_TYPES:
                     return {"status": "error", "detail": "Invalid file type"}
 
                 contents = await file.read()
 
-                # VALIDAR TAMAÑO
                 if len(contents) > MAX_FILE_SIZE:
                     return {"status": "error", "detail": "File too large"}
 
-                # NOMBRE SEGURO
-                ext = os.path.splitext(file.filename)[1]  # incluye el punto (.pdf)
+                # guardar opcional (puedes quitar esto luego)
+                ext = os.path.splitext(file.filename)[1]
                 filename = f"{uuid.uuid4()}{ext}"
                 file_path = os.path.join(UPLOAD_DIR, filename)
 
@@ -213,17 +196,11 @@ async def create_lead(request: Request):
 
                 print("FILE SAVED:", file_path)
 
-                # 🔥 GENERAR URL PÚBLICA
-                base_url = str(request.base_url).rstrip("/")
-                file_url = f"{base_url}/uploads/{filename}"
+                # 🔥 preparar attachment
+                file_bytes = contents
+                file_name = file.filename
 
-                # 🔥 GUARDAR EN DATA
-                data["file_url"] = file_url
-                data["file_path"] = file_path  # fallback opcional
-
-                print("FILE URL:", file_url)
-
-            await send_email(data)
+            await send_email(data, file_bytes, file_name)
 
             return {"status": "success"}
 
