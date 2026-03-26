@@ -110,9 +110,7 @@ export default function Hero() {
         formData.append("file", cleanFile);
       }
 
-      for (let pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
+      console.log("Form submitted");
 
       const res = await fetch(`${API}/lead`, {
         method: "POST",
