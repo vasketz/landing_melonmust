@@ -158,7 +158,7 @@ async def create_lead(request: Request):
             file = None
 
             for key, value in form.items():
-                if isinstance(value, UploadFile):
+                if key == "file":
                     file = value
                 else:
                     data[key] = value
