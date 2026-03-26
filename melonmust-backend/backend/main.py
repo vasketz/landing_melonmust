@@ -5,6 +5,7 @@ from fastapi import FastAPI, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from dotenv import load_dotenv
+from fastapi.staticfiles import StaticFiles
 import resend
 
 # =========================
@@ -21,6 +22,9 @@ resend.api_key = RESEND_API_KEY
 # APP
 # =========================
 app = FastAPI()
+
+# 🔥 STATIC FILES (AQUÍ)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # =========================
 # CORS (RESTRINGIDO)
@@ -71,11 +75,24 @@ def root():
 # =========================
 # EMAIL
 # =========================
-async def send_email(data: dict, file_path: str = None):
+async def send_email(data: dict):
 
     file_section = ""
-    if file_path:
-        file_section = f"<p><b>File saved internally:</b> {file_path}</p>"
+
+    # 🔥 si hay URL (prioridad)
+    if data.get("file_url"):
+        file_section = f"""
+        <p>
+          <b>Statement:</b><br/>
+          <a href="{data.get('file_url')}" target="_blank">
+            View File
+          </a>
+        </p>
+        """
+
+    # fallback (solo por debug)
+    elif data.get("file_path"):
+        file_section = f"<p><b>File saved:</b> {data.get('file_path')}</p>"
 
     response = resend.Emails.send({
         "from": "MelonMust <onboarding@resend.dev>",
@@ -192,7 +209,17 @@ async def create_lead(request: Request):
 
                 print("FILE SAVED:", file_path)
 
-            await send_email(data, file_path)
+                # 🔥 GENERAR URL PÚBLICA
+                base_url = str(request.base_url).rstrip("/")
+                file_url = f"{base_url}/uploads/{filename}"
+
+                # 🔥 GUARDAR EN DATA
+                data["file_url"] = file_url
+                data["file_path"] = file_path  # fallback opcional
+
+                print("FILE URL:", file_url)
+
+            await send_email(data)
 
             return {"status": "success"}
 
