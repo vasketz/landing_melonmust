@@ -1,10 +1,9 @@
 import os
 import uuid
+from time import time
 from fastapi import FastAPI, UploadFile, Request
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import resend
 
@@ -24,21 +23,43 @@ resend.api_key = RESEND_API_KEY
 app = FastAPI()
 
 # =========================
-# STATIC FILES
-# =========================
-os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
-# =========================
-# CORS
+# CORS (RESTRINGIDO)
 # =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://landing-melonmust.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# =========================
+# CONFIG
+# =========================
+UPLOAD_DIR = "uploads"
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg"]
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# =========================
+# RATE LIMIT
+# =========================
+requests_log = {}
+
+def rate_limit(ip):
+    now = time()
+    if ip not in requests_log:
+        requests_log[ip] = []
+
+    # limpiar requests antiguos
+    requests_log[ip] = [t for t in requests_log[ip] if now - t < 60]
+
+    if len(requests_log[ip]) > 10:
+        return False
+
+    requests_log[ip].append(now)
+    return True
 
 # =========================
 # ROOT
@@ -48,31 +69,13 @@ def root():
     return {"status": "ok"}
 
 # =========================
-# MODELO (JSON)
-# =========================
-class Lead(BaseModel):
-    firstName: str
-    lastName: str
-    email: str
-    phone: str
-    amount: str
-    business: str | None = None
-
-# =========================
 # EMAIL
 # =========================
-async def send_email(data: dict):
+async def send_email(data: dict, file_path: str = None):
 
     file_section = ""
-    if data.get("file_url"):
-        file_section = f"""
-        <p>
-          <b>Statement:</b><br/>
-          <a href="{data.get('file_url')}" target="_blank">
-            View File
-          </a>
-        </p>
-        """
+    if file_path:
+        file_section = f"<p><b>File saved internally:</b> {file_path}</p>"
 
     response = resend.Emails.send({
         "from": "MelonMust <onboarding@resend.dev>",
@@ -99,19 +102,46 @@ async def options_lead():
     return Response(status_code=200)
 
 # =========================
+# VALIDACIONES
+# =========================
+def validate_data(data: dict):
+    if "@" not in data.get("email", ""):
+        return "Invalid email"
+
+    if len(data.get("phone", "")) < 7:
+        return "Invalid phone"
+
+    try:
+        int(data.get("amount", 0))
+    except:
+        return "Invalid amount"
+
+    return None
+
+# =========================
 # ENDPOINT
 # =========================
 @app.post("/lead")
 async def create_lead(request: Request):
 
+    # 🔒 RATE LIMIT
+    client_ip = request.client.host
+    if not rate_limit(client_ip):
+        return {"status": "error", "detail": "Too many requests"}
+
     content_type = request.headers.get("content-type", "")
 
     try:
         # =========================
-        # JSON (NO TOCAR)
+        # JSON
         # =========================
         if "application/json" in content_type:
             data = await request.json()
+
+            error = validate_data(data)
+            if error:
+                return {"status": "error", "detail": error}
+
             print("NEW LEAD (JSON):", data)
 
             await send_email(data)
@@ -124,40 +154,45 @@ async def create_lead(request: Request):
         elif "multipart/form-data" in content_type:
             form = await request.form()
 
-            # separar campos y archivo correctamente
             data = {}
             file = None
-            
+
             for key, value in form.items():
                 if isinstance(value, UploadFile):
                     file = value
                 else:
                     data[key] = value
 
+            error = validate_data(data)
+            if error:
+                return {"status": "error", "detail": error}
+
             print("NEW LEAD (FORM):", data)
+
+            file_path = None
 
             if file and isinstance(file, UploadFile):
 
+                # VALIDAR TIPO
+                if file.content_type not in ALLOWED_TYPES:
+                    return {"status": "error", "detail": "Invalid file type"}
+
                 contents = await file.read()
 
-                # 🔥 nombre único (CRÍTICO)
-                filename = f"{uuid.uuid4()}_{file.filename.replace(' ', '_')}"
-                file_path = f"uploads/{filename}"
+                # VALIDAR TAMAÑO
+                if len(contents) > MAX_FILE_SIZE:
+                    return {"status": "error", "detail": "File too large"}
+
+                # NOMBRE SEGURO
+                filename = f"{uuid.uuid4()}.dat"
+                file_path = os.path.join(UPLOAD_DIR, filename)
 
                 with open(file_path, "wb") as f:
                     f.write(contents)
 
-                # 🔥 URL dinámica (CRÍTICO)
-                base_url = str(request.base_url).rstrip("/")
-                file_url = f"{base_url}/uploads/{filename}"
-
-                # 🔥 guardar en data
-                data["file_url"] = file_url
-
                 print("FILE SAVED:", file_path)
-                print("FILE URL:", file_url)
 
-            await send_email(data)
+            await send_email(data, file_path)
 
             return {"status": "success"}
 
@@ -166,4 +201,4 @@ async def create_lead(request: Request):
 
     except Exception as e:
         print("ERROR ❌:", e)
-        return {"status": "error", "detail": str(e)}
+        return {"status": "error", "detail": "Internal server error"}
