@@ -9,9 +9,13 @@ export default function Hero() {
     phone: "",
     amount: "",
     business: "",
-    file: null
+    file: null,
+    website: "" // 🛡️ honeypot anti-bot
   });
 
+  // =========================
+  // HANDLE CHANGE
+  // =========================
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -19,48 +23,119 @@ export default function Hero() {
     });
   };
 
+  // =========================
+  // SANITIZE INPUT
+  // =========================
+  const sanitize = (str) => {
+    if (!str) return "";
+    return str.replace(/[<>]/g, "");
+  };
+
+  // =========================
+  // VALIDATION
+  // =========================
+  const validateForm = () => {
+
+    // email válido
+    if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return "Invalid email";
+    }
+
+    // phone básico
+    if (form.phone.length < 8) {
+      return "Invalid phone number";
+    }
+
+    // amount numérico
+    if (!Number(form.amount)) {
+      return "Invalid amount";
+    }
+
+    // archivo (si existe)
+    if (form.file) {
+      const allowedTypes = ["application/pdf", "image/png", "image/jpeg"];
+
+      if (!allowedTypes.includes(form.file.type)) {
+        return "Invalid file type";
+      }
+
+      if (form.file.size > 5 * 1024 * 1024) {
+        return "File too large (max 5MB)";
+      }
+    }
+
+    return null;
+  };
+
+  // =========================
+  // SUBMIT
+  // =========================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("API URL:", import.meta.env.VITE_API_URL);
-    console.log("FORM DATA:", form);
+    // 🛡️ ANTI-BOT (honeypot)
+    if (form.website) return;
+
+    const error = validateForm();
+    if (error) {
+      alert(error);
+      return;
+    }
 
     const API = import.meta.env.VITE_API_URL;
 
     try {
-      // 🔥 FORM DATA (CLAVE PARA FILE)
       const formData = new FormData();
 
-      formData.append("firstName", form.firstName);
-      formData.append("lastName", form.lastName);
+      // 🧼 sanitización antes de enviar
+      formData.append("firstName", sanitize(form.firstName));
+      formData.append("lastName", sanitize(form.lastName));
       formData.append("email", form.email);
       formData.append("phone", form.phone);
       formData.append("amount", form.amount);
-      formData.append("business", form.business);
+      formData.append("business", sanitize(form.business));
 
+      // archivo seguro
       if (form.file) {
         const cleanFile = new File(
           [form.file],
-          form.file.name.replace(/[^a-zA-Z0-9.]/g, "_"), // 🔥 limpia nombre
+          form.file.name.replace(/[^a-zA-Z0-9.]/g, "_"),
           { type: form.file.type }
         );
-      
+
         formData.append("file", cleanFile);
       }
 
       const res = await fetch(`${API}/lead`, {
         method: "POST",
-        body: formData, // ❗ SIN headers
+        body: formData,
       });
 
       const data = await res.json();
-      console.log("DATA:", data);
+
+      // 🛡️ manejo real de errores
+      if (!res.ok || data.status !== "success") {
+        alert(data.detail || "Error submitting application");
+        return;
+      }
 
       alert("Application submitted successfully");
 
+      // limpiar formulario
+      setForm({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        amount: "",
+        business: "",
+        file: null,
+        website: ""
+      });
+
     } catch (error) {
       console.error("ERROR:", error);
-      alert("Error sending data");
+      alert("Network error. Try again.");
     }
   };
 
@@ -125,20 +200,29 @@ export default function Hero() {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
 
+            {/* 🛡️ honeypot */}
+            <input
+              type="text"
+              name="website"
+              value={form.website}
+              onChange={handleChange}
+              style={{ display: "none" }}
+            />
+
             <div className="grid grid-cols-2 gap-3">
-              <input name="firstName" placeholder="First Name" onChange={handleChange} className="p-3 rounded-lg text-black" required />
-              <input name="lastName" placeholder="Last Name" onChange={handleChange} className="p-3 rounded-lg text-black" required />
+              <input name="firstName" value={form.firstName} placeholder="First Name" onChange={handleChange} className="p-3 rounded-lg text-black" required />
+              <input name="lastName" value={form.lastName} placeholder="Last Name" onChange={handleChange} className="p-3 rounded-lg text-black" required />
             </div>
 
-            <input name="business" placeholder="Business Name" onChange={handleChange} className="w-full p-3 rounded-lg text-black" />
+            <input name="business" value={form.business} placeholder="Business Name" onChange={handleChange} className="w-full p-3 rounded-lg text-black" />
 
-            <input name="email" type="email" placeholder="Email" onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
+            <input name="email" value={form.email} type="email" placeholder="Email" onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
 
-            <input name="phone" placeholder="Phone Number" onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
+            <input name="phone" value={form.phone} placeholder="Phone Number" onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
 
-            <input name="amount" placeholder="Funding Amount" value={form.amount} onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
+            <input name="amount" value={form.amount} placeholder="Funding Amount" onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
 
-            {/* FILE INPUT PRO */}
+            {/* FILE INPUT */}
             <div className="text-left">
               <label className="text-sm text-gray-300 block mb-2">
                 Upload Bank Statements (Optional)
@@ -181,8 +265,9 @@ export default function Hero() {
               Check My Approval →
             </button>
 
+            {/* 🔒 confianza */}
             <p className="text-center text-sm text-gray-300">
-              Takes less than 60 seconds • No credit impact
+              🔒 Your data is securely processed. We do not share your information.
             </p>
 
           </form>
