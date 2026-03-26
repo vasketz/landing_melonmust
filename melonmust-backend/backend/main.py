@@ -19,6 +19,15 @@ ADMIN_EMAIL = os.getenv("EMAIL_USER")
 resend.api_key = RESEND_API_KEY
 
 # =========================
+# CONFIG
+# =========================
+UPLOAD_DIR = "uploads"
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg"]
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# =========================
 # APP
 # =========================
 app = FastAPI()
@@ -37,14 +46,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# =========================
-# CONFIG
-# =========================
-UPLOAD_DIR = "uploads"
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-ALLOWED_TYPES = ["application/pdf", "image/png", "image/jpeg"]
 
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # =========================
 # RATE LIMIT
