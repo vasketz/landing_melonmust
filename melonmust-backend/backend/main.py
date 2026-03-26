@@ -204,7 +204,8 @@ async def create_lead(request: Request):
                     return {"status": "error", "detail": "File too large"}
 
                 # NOMBRE SEGURO
-                filename = f"{uuid.uuid4()}.dat"
+                ext = os.path.splitext(file.filename)[1]  # incluye el punto (.pdf)
+                filename = f"{uuid.uuid4()}{ext}"
                 file_path = os.path.join(UPLOAD_DIR, filename)
 
                 with open(file_path, "wb") as f:
