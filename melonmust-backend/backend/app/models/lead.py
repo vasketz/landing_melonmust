@@ -19,6 +19,6 @@ class Lead(Base):
     score = Column(Integer)
     status = Column(String, default="new")
 
-    create_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     

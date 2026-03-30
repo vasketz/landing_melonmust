@@ -16,7 +16,7 @@ def create_lead(db: Session, data: dict):
         email_encrypted=encrypt(data.get("email")),
         phone_encrypted=encrypt(data.get("phone")),
         amount=int(data.get("amount")),
-        business=date.get("business"),
+        business=data.get("business"),
         score=score
     )
 
