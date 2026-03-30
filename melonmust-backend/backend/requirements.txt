@@ -4,3 +4,7 @@ aiosmtplib
 python-dotenv
 resend
 python-multipart
+sqlalchemy
+pyscopg2-binary
+cryptography
+
