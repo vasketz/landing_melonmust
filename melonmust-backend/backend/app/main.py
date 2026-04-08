@@ -28,9 +28,13 @@ app = FastAPI()
 # =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://landing-melonmust.vercel.app"],
+    allow_origins=[
+        "https://melonmust.com",
+        "https://www.melonmust.com",
+        "https://landing-melonmust.vercel.app",  # opcional (para pruebas)
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["POST"],
     allow_headers=["*"],
 )
 

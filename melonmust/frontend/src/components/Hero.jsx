@@ -10,8 +10,10 @@ export default function Hero() {
     amount: "",
     business: "",
     file: null,
-    website: "" // 🛡️ honeypot anti-bot
+    website: ""
   });
+
+  const [loading, setLoading] = useState(false);
 
   // =========================
   // HANDLE CHANGE
@@ -28,7 +30,7 @@ export default function Hero() {
   // =========================
   const sanitize = (str) => {
     if (!str) return "";
-    return str.replace(/[<>]/g, "");
+    return str.replace(/[<>]/g, "").trim();
   };
 
   // =========================
@@ -36,22 +38,19 @@ export default function Hero() {
   // =========================
   const validateForm = () => {
 
-    // email válido
     if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       return "Invalid email";
     }
 
-    // phone básico
     if (form.phone.length < 8) {
       return "Invalid phone number";
     }
 
-    // amount numérico
-    if (!Number(form.amount)) {
+    const amount = Number(form.amount);
+    if (isNaN(amount) || amount <= 0) {
       return "Invalid amount";
     }
 
-    // archivo (si existe)
     if (form.file) {
       const allowedTypes = ["application/pdf", "image/png", "image/jpeg"];
 
@@ -73,8 +72,8 @@ export default function Hero() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🛡️ ANTI-BOT (honeypot)
-    if (form.website) return;
+    if (loading) return; // 🛡️ evita múltiples envíos
+    if (form.website) return; // 🛡️ honeypot
 
     const error = validateForm();
     if (error) {
@@ -85,9 +84,10 @@ export default function Hero() {
     const API = import.meta.env.VITE_API_URL;
 
     try {
+      setLoading(true);
+
       const formData = new FormData();
 
-      // 🧼 sanitización antes de enviar
       formData.append("firstName", sanitize(form.firstName));
       formData.append("lastName", sanitize(form.lastName));
       formData.append("email", form.email);
@@ -95,31 +95,36 @@ export default function Hero() {
       formData.append("amount", form.amount);
       formData.append("business", sanitize(form.business));
 
-      // 🔥 tomar archivo directo del input (más confiable)
-      const fileInput = document.querySelector('input[type="file"]');
-
-      if (fileInput && fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-      
+      // ✅ usar archivo desde estado (correcto)
+      if (form.file) {
         const cleanFile = new File(
-          [file],
-          file.name.replace(/[^a-zA-Z0-9.]/g, "_"),
-          { type: file.type }
+          [form.file],
+          form.file.name.replace(/[^a-zA-Z0-9.]/g, "_"),
+          { type: form.file.type }
         );
-      
+
         formData.append("file", cleanFile);
       }
 
-      console.log("Form submitted");
+      // ⏱️ timeout protección
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
 
       const res = await fetch(`${API}/lead`, {
         method: "POST",
         body: formData,
+        signal: controller.signal
       });
 
-      const data = await res.json();
+      clearTimeout(timeout);
 
-      // 🛡️ manejo real de errores
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+
       if (!res.ok || data.status !== "success") {
         alert(data.detail || "Error submitting application");
         return;
@@ -127,7 +132,6 @@ export default function Hero() {
 
       alert("Application submitted successfully");
 
-      // limpiar formulario
       setForm({
         firstName: "",
         lastName: "",
@@ -141,14 +145,20 @@ export default function Hero() {
 
     } catch (error) {
       console.error("ERROR:", error);
-      alert("Network error. Try again.");
+
+      if (error.name === "AbortError") {
+        alert("Request timeout. Try again.");
+      } else {
+        alert("Network error. Try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <section className="relative w-full min-h-screen text-white overflow-hidden pt-32">
 
-      {/* Background */}
       <div className="absolute inset-0">
         <img
           src="/background.png"
@@ -158,10 +168,8 @@ export default function Hero() {
         <div className="absolute inset-0 bg-black/70"></div>
       </div>
 
-      {/* Content */}
       <div className="relative z-10 w-full px-6 md:px-16 py-20 grid md:grid-cols-2 gap-10 items-center">
 
-        {/* LEFT */}
         <div>
           <h1 className="text-4xl md:text-5xl font-bold text-yellow-400 mb-6 leading-tight">
             Fast Business Funding in 24–48 Hours
@@ -176,28 +184,8 @@ export default function Hero() {
             <li>✔ Approval in hours, not days</li>
             <li>✔ 100% secure & confidential</li>
           </ul>
-
-          <div>
-            <p className="mb-4 text-lg">
-              How much funding do you need?
-            </p>
-
-            <div className="flex flex-wrap gap-3">
-              {["10000", "100000", "1000000", "5000000"].map((amount) => (
-                <button
-                  key={amount}
-                  type="button"
-                  onClick={() => setForm({ ...form, amount })}
-                  className="border border-white px-4 py-2 rounded hover:bg-white hover:text-black transition"
-                >
-                  ${Number(amount).toLocaleString()}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* RIGHT (FORM) */}
         <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl border border-white/20 shadow-2xl">
 
           <h2 className="text-xl font-semibold mb-4 text-center">
@@ -206,7 +194,6 @@ export default function Hero() {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
 
-            {/* 🛡️ honeypot */}
             <input
               type="text"
               name="website"
@@ -228,50 +215,32 @@ export default function Hero() {
 
             <input name="amount" value={form.amount} placeholder="Funding Amount" onChange={handleChange} className="w-full p-3 rounded-lg text-black" required />
 
-            {/* FILE INPUT */}
             <div className="text-left">
               <label className="text-sm text-gray-300 block mb-2">
                 Upload Bank Statements (Optional)
               </label>
 
-              <label className={`flex items-center justify-between w-full cursor-pointer rounded-lg px-4 py-3 transition ${
-                form.file ? "bg-green-100 text-black" : "bg-white text-black"
-              }`}>
-
-                <span className="text-sm">
-                  {form.file ? form.file.name : "Upload file"}
-                </span>
-
-                <span className="bg-yellow-500 px-4 py-1 rounded font-semibold text-sm hover:bg-yellow-400 transition">
-                  ⬆ Upload
-                </span>
-
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.png"
-                  className="hidden"
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      file: e.target.files[0],
-                    })
-                  }
-                />
-              </label>
-
-              <p className="text-xs text-gray-400 mt-1">
-                Speeds up approval process
-              </p>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.png"
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    file: e.target.files[0],
+                  })
+                }
+                className="w-full p-2 bg-white text-black rounded"
+              />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-yellow-500 text-black p-4 rounded-lg font-bold text-lg hover:bg-yellow-400 transition shadow-lg"
+              disabled={loading}
+              className="w-full bg-yellow-500 text-black p-4 rounded-lg font-bold text-lg hover:bg-yellow-400 transition shadow-lg disabled:opacity-50"
             >
-              Check My Approval →
+              {loading ? "Sending..." : "Check My Approval →"}
             </button>
 
-            {/* 🔒 confianza */}
             <p className="text-center text-sm text-gray-300">
               🔒 Your data is securely processed. We do not share your information.
             </p>
