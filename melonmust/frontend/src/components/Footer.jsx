@@ -1,38 +1,49 @@
-export default function Footer() {
-  return (
-    <footer className="bg-black text-white py-20 px-6 md:px-16">
+<footer className="bg-black text-gray-300 border-t border-white/10 mt-20">
 
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+  <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-start gap-10">
 
-        {/* LEFT */}
+    {/* LEFT */}
+    <div className="max-w-md">
+      <div className="flex items-center gap-3 mb-4">
+        <img src="/footer_logo.png" alt="MelonMust" className="w-14 object-contain" />
         <div>
-          <img 
-            src="/footer_logo.png" 
-            className="h-40 mb-0 drop-shadow-lg"
-          />
-
-          <p className="text-gray-400 text-sm max-w-md">
-            Business funding solutions designed to help entrepreneurs grow and scale.
+          <p className="text-yellow-400 font-semibold leading-none">
+            MelonMust
+          </p>
+          <p className="text-sm text-gray-400 leading-none">
+            Capital
           </p>
         </div>
-
-        {/* RIGHT */}
-        <div className="md:text-right">
-          <h3 className="text-xl font-semibold mb-4">
-            Contact
-          </h3>
-
-          <p className="text-gray-300">info@melonmust.com</p>
-          <p className="text-gray-300">561-372-8457</p>
-        </div>
-
       </div>
 
-      {/* divider */}
-      <div className="border-t border-white/10 mt-10 pt-6 text-center text-gray-500 text-sm">
-        © 2026 MelonMust Capital. All rights reserved.
-      </div>
+      <p className="text-sm text-gray-400 leading-relaxed">
+        Business funding solutions designed to help entrepreneurs grow and scale.
+      </p>
+    </div>
 
-    </footer>
-  );
-}
+    {/* RIGHT */}
+    <div className="text-left md:text-right">
+      <h4 className="text-white font-semibold mb-3">
+        Contact
+      </h4>
+
+      <p className="text-sm text-gray-400">
+        info@melonmust.com
+      </p>
+
+      <p className="text-sm text-gray-400">
+        561-372-8457
+      </p>
+    </div>
+
+  </div>
+
+  {/* DIVIDER */}
+  <div className="border-t border-white/10"></div>
+
+  {/* BOTTOM */}
+  <div className="text-center py-4 text-sm text-gray-500">
+    © 2026 MelonMust Capital. All rights reserved.
+  </div>
+
+</footer>
