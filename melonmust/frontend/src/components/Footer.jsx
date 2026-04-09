@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="max-w-md">
           <div className="flex items-center gap-4 mb-4">
             <img
-              src="/logo.png"
+              src="/footer_logo.png"
               alt="MelonMust"
               className="w-20 object-contain"
             />
