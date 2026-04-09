@@ -7,7 +7,7 @@ export default function Navbar() {
         {/* LOGO */}
         <div className="flex items-center">
          <img 
-            src="/Logo.png" 
+            src="/Logo_2.png" 
             alt="MelonMust"
             className="h-28 md:h-40 object-contain drop-shadow-[0_0_10px_rgba(255,200,0,0.6)]"
         />
