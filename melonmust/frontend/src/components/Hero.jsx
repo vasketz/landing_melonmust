@@ -220,19 +220,48 @@ export default function Hero() {
                 Upload Bank Statements (Optional)
               </label>
 
-              <input
-                type="file"
-                accept=".pdf,.jpg,.png"
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    file: e.target.files[0],
-                  })
-                }
-                className="w-full p-2 bg-white text-black rounded"
-              />
+              <label
+                className={`flex items-center justify-between w-full cursor-pointer rounded-lg px-4 py-3 transition border ${
+                  form.file
+                    ? "bg-green-100 text-black border-green-400"
+                    : "bg-white text-black border-gray-300 hover:border-yellow-400"
+                }`}
+              >
+                <span className="text-sm truncate">
+                  {form.file ? form.file.name : "No file selected"}
+                </span>
+              
+                <span className="bg-yellow-500 px-4 py-1 rounded font-semibold text-sm hover:bg-yellow-400 transition">
+                  Upload
+                </span>
+              
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.png"
+                  className="hidden"
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      file: e.target.files[0],
+                    })
+                  }
+                />
+              </label>
+              
+              {form.file && (
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, file: null })}
+                  className="text-xs text-red-400 mt-1"
+                >
+                  Remove file
+                </button>
+              )}
+                            
+              <p className="text-xs text-gray-400 mt-1">
+                PDF, JPG or PNG (Max 5MB)
+              </p>
             </div>
-
             <button
               type="submit"
               disabled={loading}
